@@ -6,14 +6,13 @@ import subprocess
 import inotify.adapters
 
 extensions=['.jpg','.JPG','.tif','.TIF','.tiff','.TIFF']
+input_directory=b'/photos/eye-fi'
+output_directory='/documents'
+lang='eng'
 
 _DEFAULT_LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 _LOGGER = logging.getLogger(__name__)
-
-input_directory=b'/photos/eye-fi'
-output_directory='/documents'
-lang='eng'
 
 def _configure_logging():
     _LOGGER.setLevel(logging.DEBUG)
@@ -48,7 +47,8 @@ def _main():
                   # for a personal reason I'm including the umask of 0002
                   subprocess.call("umask 002; /usr/bin/tesseract -psm 1 -l {} {} {} pdf".format(lang,infile,outfile),shell=True)
                   # part of a todo.  Make the file immutable so it can't be easily deleted?
-                  #subprocess.call("chattr +i {}.pdf".format(outfile))
+                  # this may not work on NFS
+                  #subprocess.call("chattr +i {}".format(infile))
 
 # I should really make this a daemon.
 if __name__ == '__main__':
