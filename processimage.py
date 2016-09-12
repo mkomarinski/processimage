@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import logging
 import os
+import shutil
 import subprocess
 
 import inotify.adapters
@@ -8,6 +9,7 @@ import inotify.adapters
 extensions=['.jpg','.JPG','.tif','.TIF','.tiff','.TIFF']
 input_directory=b'/photos/eye-fi'
 output_directory='/documents'
+archive_directory='/photos/archive'
 lang='eng'
 
 _DEFAULT_LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -46,9 +48,8 @@ def _main():
                   # call tesseract which will append the extension to the end of the output file name
                   # for a personal reason I'm including the umask of 0002
                   subprocess.call("umask 002; /usr/bin/tesseract -psm 1 -l {} {} {} pdf".format(lang,infile,outfile),shell=True)
-                  # part of a todo.  Make the file immutable so it can't be easily deleted?
-                  # this may not work on NFS
-                  #subprocess.call("chattr +i {}".format(infile))
+                  # Move the file to its final archive location
+                  shutil.move(infile, archive_directory)
 
 # I should really make this a daemon.
 if __name__ == '__main__':
