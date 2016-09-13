@@ -13,6 +13,8 @@ extensions=['.jpg','.JPG','.tif','.TIF','.tiff','.TIFF']
 input_directory=b'/photos/eye-fi'
 output_directory='/documents/'
 archive_directory='/photos/archive'
+dropbox_key='h9vmhucztbd7178'
+dropbox_secret='phchee9h235s6m0'
 lang='eng'
 
 _DEFAULT_LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -41,7 +43,7 @@ def _dropbox_login():
     # If the token file doesn't exist, that's fine, ask the user to go to
     #  the dropbox site and get a key to then retrieve a token.
     if not os.path.isfile('dropbox_token.txt'):
-      auth_flow = dropbox.DropboxOAuth2FlowNoRedirect('xu7wl0hjqlbgedj','0a9fs8lglcj42zn')
+      auth_flow = dropbox.DropboxOAuth2FlowNoRedirect(dropbox_key,dropbox_secret)
 
       authorize_url = auth_flow.start()
 
