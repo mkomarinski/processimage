@@ -4,18 +4,48 @@ import os
 import shutil
 import subprocess
 import dropbox
-
+import configparser
 import inotify.adapters
 
 extensions=['.jpg','.JPG','.tif','.TIF','.tiff','.TIFF']
 
 # ecch.  This stuff needs to be in a config file.
-input_directory=b'/photos/eye-fi'
-output_directory='/documents/'
-archive_directory='/photos/archive'
-dropbox_key='h9vmhucztbd7178'
-dropbox_secret='phchee9h235s6m0'
-lang='eng'
+config = configparser.ConfigParser()
+try:
+  config.read('processimage.conf')
+except:
+  pass
+try:
+  input_directory = config.get('main','intake')
+except:
+  input_directory=b'/photos/eye-fi'
+
+try:
+  output_directory = config.get('main', 'output')
+except:
+  output_directory='/documents/'
+
+try:
+  archive_directory = config.get('main','archive')
+except:
+  archive_directory='/photos/archive'
+
+try:
+  dropbox_key = config.get('main','dropbox_key')
+  dropbox_secret = config.get('main','dropbox_secret')
+except:
+  # you can use this, but there's an upper limit of 500 users and
+  #  I reserve the right to change at any time.  You have been warned.
+  #  Hold away from hands.  Contents under pressure.
+  # Getting your own dropbox app isn't all that difficult so you can
+  #  generate your own if you want.
+  dropbox_key='h9vmhucztbd7178'
+  dropbox_secret='phchee9h235s6m0'
+
+try:
+  lang=config.get('main','language')
+except:
+  lang='eng'
 
 _DEFAULT_LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
@@ -24,7 +54,8 @@ _LOGGER = logging.getLogger(__name__)
 def _configure_logging():
     _LOGGER.setLevel(logging.DEBUG)
 
-    ch = logging.StreamHandler()
+    #ch = logging.StreamHandler()
+    ch = logging.FileHandler('processimage.log')
 
     formatter = logging.Formatter(_DEFAULT_LOG_FORMAT)
     ch.setFormatter(formatter)
