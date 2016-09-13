@@ -3,12 +3,15 @@ import logging
 import os
 import shutil
 import subprocess
+import dropbox
 
 import inotify.adapters
 
 extensions=['.jpg','.JPG','.tif','.TIF','.tiff','.TIFF']
+
+# ecch.  This stuff needs to be in a config file.
 input_directory=b'/photos/eye-fi'
-output_directory='/documents'
+output_directory='/documents/'
 archive_directory='/photos/archive'
 lang='eng'
 
@@ -25,6 +28,54 @@ def _configure_logging():
     ch.setFormatter(formatter)
 
     _LOGGER.addHandler(ch)
+
+def _dropbox_login():
+    # Connect to Dropbox.  If a new token is needed, tell the user, otherwise
+    #  the one we have should be sufficient.
+
+    # Where are we keeping the token?
+    # WARNING: this token will give someone unlimited access to your dropbox
+    #  account.  Be safe!
+    TOKENS = 'dropbox_token.txt'
+
+    # If the token file doesn't exist, that's fine, ask the user to go to
+    #  the dropbox site and get a key to then retrieve a token.
+    if not os.path.isfile('dropbox_token.txt'):
+      auth_flow = dropbox.DropboxOAuth2FlowNoRedirect('xu7wl0hjqlbgedj','0a9fs8lglcj42zn')
+
+      authorize_url = auth_flow.start()
+
+      print "1. Go to: " + authorize_url
+      print "2. Click \"Allow\" (you might have to log in first)."
+      print "3. Copy the authorization code."
+
+      auth_code = raw_input("Enter the authorization code here: ").strip()
+      try:
+        access_token, user_id = auth_flow.finish(auth_code)
+      except Exception, e:
+        print('Error: %s' % (e,))
+        return
+
+      token_file = open(TOKENS,'w')
+      print(access_token)
+      token_file.write("%s" % (access_token) )
+      token_file.close()
+    else:
+      # If the token file already exists, then we'll need to assume that
+      #  it has a valid token in it.  Use that.
+      token_file = open(TOKENS)
+      access_token = token_file.read()
+      token_file.close()
+    return access_token
+
+def upload_file(access_token, file_from, file_to):
+      """upload a file to Dropbox using API v2
+      """
+      dbx = dropbox.Dropbox(access_token)
+
+      with open(file_from, 'rb') as f:
+          dbx.files_upload(f, file_to)
+
 
 def _main():
     i = inotify.adapters.InotifyTree(input_directory)
@@ -48,10 +99,15 @@ def _main():
                   # call tesseract which will append the extension to the end of the output file name
                   # for a personal reason I'm including the umask of 0002
                   subprocess.call("umask 002; /usr/bin/tesseract -psm 1 -l {} {} {} pdf".format(lang,infile,outfile),shell=True)
-                  # Move the file to its final archive location
+                  # upload the resulting file to dropbox
+                  upload_source = outfile + ".pdf"
+                  upload_target = os.path.join('/scans',basename + ".pdf")
+                  upload_file(access_token,upload_source,upload_target)
+                  # Move the original to its final archive location
                   shutil.move(infile, archive_directory)
 
 # I should really make this a daemon.
 if __name__ == '__main__':
     _configure_logging()
+    access_token=_dropbox_login()
     _main()
