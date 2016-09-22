@@ -90,3 +90,4 @@ ENV/
 
 # other
 dropbox_token.txt
+processimage.log
