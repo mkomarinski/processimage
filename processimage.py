@@ -6,6 +6,7 @@ import subprocess
 import dropbox
 import configparser
 import inotify.adapters
+from PyPDF2 import PdfFileWriter, PdfFileReader
 
 extensions=['.jpg','.JPG','.tif','.TIF','.tiff','.TIFF']
 
@@ -109,6 +110,30 @@ def upload_file(access_token, file_from, file_to):
       with open(file_from, 'rb') as f:
           dbx.files_upload(f, file_to)
 
+def pdf_resize(pdf_file):
+	pdf_file = pdf_file + ".pdf"
+	output = PdfFileWriter()
+	inputstream = file(pdf_file, "rb")
+	input1 = PdfFileReader(inputstream)
+
+	# Make a simple list of page objects
+	pages = []
+	for i in range(input1.getNumPages()):
+	    pages.append(input1.getPage(i))
+
+	# Scale and add the pages to the output object
+	count = 1
+	for page in pages:
+	    page.scaleBy(.24)
+	    output.addPage(page)
+	    count += 1
+
+	# Make and write to an output document
+	outDoc = open('test.pdf', 'wb')
+	output.write(outDoc)
+	outDoc.close()
+	os.rename("test.pdf",pdf_file)
+
 
 def _main():
     i = inotify.adapters.InotifyTree(input_directory)
@@ -132,6 +157,8 @@ def _main():
                   # call tesseract which will append the extension to the end of the output file name
                   # for a personal reason I'm including the umask of 0002
                   subprocess.call("umask 002; /usr/bin/tesseract -psm 1 -l {} {} {} pdf".format(lang,infile,outfile),shell=True)
+                  # resize the image
+                  pdf_resize(outfile)
                   # upload the resulting file to dropbox
                   upload_source = outfile + ".pdf"
                   upload_target = os.path.join('/scans',basename + ".pdf")
